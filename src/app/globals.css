@@ -156,3 +156,9 @@ a {
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .font-fustat {
+    font-family: var(--font-fustat), sans-serif;
+  }
+}

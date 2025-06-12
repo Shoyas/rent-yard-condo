@@ -10,7 +10,7 @@ const HomePage = () => {
   return (
     <>
       <main>
-        <section className="h-screen w-full">
+        <section className="h-screen w-full font-fustat">
           <PropertyOnboardingForm />
         </section>
       </main>

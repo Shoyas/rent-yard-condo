@@ -14,7 +14,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { PropertyTypeSelector } from "@/components/property-type-selector"
 import { RoleSelector } from "@/components/role-selector"
 import { FileUpload } from "@/components/file-upload"
-// import { RentYardLogo } from "@/components/rentyard-logo"
 import { Building, Home, Building2, Key, Users, Briefcase } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -22,7 +21,6 @@ import Link from "next/link"
 export type PropertyType = "single-house" | "apartments" | "condominiums"
 export type UserRole = "landlord" | "realtor" | "property-management"
 
-// Base schema for common fields
 const baseSchema = z.object({
   propertyType: z.enum(["single-house", "apartments", "condominiums"]),
   userRole: z.enum(["landlord", "realtor", "property-management"]),
@@ -31,19 +29,16 @@ const baseSchema = z.object({
   }),
 })
 
-// Landlord specific schema
 const landlordSchema = baseSchema.extend({
   ownershipDoc: z.string().min(1, "Ownership document is required"),
 })
 
-// Realtor specific schema
 const realtorSchema = baseSchema.extend({
   licenseNumber: z.string().min(1, "License number is required"),
   additionalDocs: z.string().optional(),
   landlordAgreement: z.string().min(1, "Agreement with landlord is required"),
 })
 
-// Property management company specific schema
 const propertyManagementSchema = baseSchema.extend({
   companyName: z.string().min(1, "Company name is required"),
   companyIdentifier: z.string().min(1, "Company identifier is required"),
@@ -60,18 +55,19 @@ const propertyManagementSchema = baseSchema.extend({
   zipCode: z.string().min(1, "Zip code is required"),
 })
 
-// Union type for all possible form data
 type FormData =
   | z.infer<typeof landlordSchema>
   | z.infer<typeof realtorSchema>
   | z.infer<typeof propertyManagementSchema>
 
 export function PropertyOnboardingForm() {
-  const [propertyType, setPropertyType] = useState<PropertyType>("condominiums")
-  const [userRole, setUserRole] = useState<UserRole>("property-management")
+  const [propertyType, setPropertyType] = useState<PropertyType | undefined>(undefined)
+  const [userRole, setUserRole] = useState<UserRole | undefined>(undefined)
 
   // Get the appropriate schema based on user role
   const getSchema = () => {
+    if (!userRole) return baseSchema;
+
     switch (userRole) {
       case "landlord":
         return landlordSchema
@@ -87,17 +83,17 @@ export function PropertyOnboardingForm() {
   const form = useForm<FormData>({
     resolver: zodResolver(getSchema()) as any,
     defaultValues: {
-      propertyType: "condominiums",
-      userRole: "property-management",
+      propertyType: undefined,
+      userRole: undefined,
       acceptTerms: false,
     },
   })
 
-  // Update form values when role changes
+  // ! Update form values when role changes
   const handleRoleChange = (newRole: UserRole) => {
     setUserRole(newRole)
     form.setValue("userRole", newRole)
-    // Reset form validation when role changes
+    // ! Reset form validation when role changes
     form.clearErrors()
   }
 
@@ -109,7 +105,6 @@ export function PropertyOnboardingForm() {
   const onSubmit = (data: FormData) => {
     console.log(`Form data for ${userRole}:`, data)
 
-    // Log specific data based on role
     switch (userRole) {
       case "landlord":
         console.log("Landlord form submitted:", {
@@ -215,20 +210,20 @@ export function PropertyOnboardingForm() {
       <div className="container mx-auto px-20 py-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit as SubmitHandler<any>)} className="space-y-8">
-            {/* Property Type Section */}
+            {/* ! Property Type Section */}
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Property type</h2>
-              <PropertyTypeSelector options={propertyTypes} value={propertyType} onChange={handlePropertyTypeChange} />
+              <PropertyTypeSelector options={propertyTypes} value={propertyType || ""} onChange={handlePropertyTypeChange} />
             </div>
 
-            {/* Role Selection Section */}
+            {/* ! Role Selection Section */}
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Select your role</h2>
-              <RoleSelector options={userRoles} value={userRole} onChange={(newRole: string) => handleRoleChange(newRole as UserRole)} />
+              <RoleSelector options={userRoles} value={userRole || ""} onChange={(newRole: string) => handleRoleChange(newRole as UserRole)} />
             </div>
 
-            {/* Conditional Content Based on Role */}
-            {userRole === "landlord" && (
+            {/* ! Conditional Content Based on Property Type and Role */}
+            {propertyType === "condominiums" && userRole === "landlord" && (
               <div className="mb-8">
                 <Card className="p-6 bg-gray-50 border-gray-200">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Proof of ownership</h3>
@@ -255,7 +250,7 @@ export function PropertyOnboardingForm() {
               </div>
             )}
 
-            {userRole === "realtor" && (
+            {propertyType === "condominiums" && userRole === "realtor" && (
               <div className="mb-8">
                 <Card className="p-6 bg-gray-50 border-gray-200">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Realtor verification</h3>
@@ -314,7 +309,7 @@ export function PropertyOnboardingForm() {
               </div>
             )}
 
-            {userRole === "property-management" && (
+            {propertyType === "condominiums" && userRole === "property-management" && (
               <div className="mb-8">
                 <Card className="p-6 bg-gray-50 border-gray-200">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Company & office info</h3>
@@ -528,7 +523,17 @@ export function PropertyOnboardingForm() {
               </div>
             )}
 
-            {/* Terms and Conditions */}
+            {/* ! Show nothing for other property types */}
+            {propertyType && propertyType !== "condominiums" && (
+              <div className="mb-8 text-center py-12 bg-gray-50 rounded-lg">
+                <p className="text-gray-500">
+                  Onboarding for {propertyType === "apartments" ? "Apartments complex" : "Single House Property"}
+                  is not currently available
+                </p>
+              </div>
+            )}
+
+            {/* ! Terms and Conditions */}
             <FormField
               control={form.control}
               name="acceptTerms"
@@ -547,12 +552,16 @@ export function PropertyOnboardingForm() {
               )}
             />
 
-            {/* Footer Buttons */}
+            {/* ! Footer Buttons */}
             <div className="flex items-center justify-between">
               <Button type="button" variant="ghost" className="text-gray-600">
                 Back
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6">
+              <Button
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+                disabled={!propertyType || !userRole}
+              >
                 Get started
               </Button>
             </div>
