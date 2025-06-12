@@ -1,0 +1,83 @@
+// {
+//   "root": true,
+//   "extends": [
+//     "next",
+//     "next/core-web-vitals",
+//     "eslint:recommended",
+//     "plugin:@typescript-eslint/recommended",
+//     "plugin:import/recommended",
+//     "plugin:import/typescript",
+//     "plugin:prettier/recommended"
+//   ],
+//   "plugins": ["@typescript-eslint", "import", "prettier"],
+//   "rules": {
+//     "prettier/prettier": "error",
+//     "import/order": [
+//       "warn",
+//       {
+//         "groups": ["builtin", "external", "internal"],
+//         "pathGroups": [
+//           {
+//             "pattern": "@/**",
+//             "group": "internal"
+//           }
+//         ],
+//         "pathGroupsExcludedImportTypes": ["builtin"],
+//         "newlines-between": "always",
+//         "alphabetize": {
+//           "order": "asc",
+//           "caseInsensitive": true
+//         }
+//       }
+//     ]
+//   }
+// }
+
+//! Test
+{
+  "extends": [
+    "next/core-web-vitals",
+    "next/typescript",
+    "standard",
+    "plugin:tailwindcss/recommended",
+    "prettier"
+  ],
+  "plugins": ["import"],
+  "rules": {
+    "import/order": [
+      "error",
+      {
+        "groups": [
+          "builtin", // Built-in types are first
+          "external", // External libraries
+          "internal", // Internal modules
+          ["parent", "sibling"], // Parent and sibling types can be mingled together
+          "index", // Then the index file
+          "object" // Object imports
+        ],
+        "newlines-between": "always",
+        "pathGroups": [
+          {
+            "pattern": "@app/**",
+            "group": "external",
+            "position": "after"
+          }
+        ],
+        "pathGroupsExcludedImportTypes": ["builtin"],
+        "alphabetize": {
+          "order": "asc",
+          "caseInsensitive": true
+        }
+      }
+    ]
+  },
+  "ignorePatterns": ["components/ui/**"],
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx"],
+      "rules": {
+        "no-undef": "off"
+      }
+    }
+  ]
+}
