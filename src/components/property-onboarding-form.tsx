@@ -1,0 +1,564 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client"
+
+import { useState } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm, SubmitHandler } from "react-hook-form"
+import * as z from "zod"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { PropertyTypeSelector } from "@/components/property-type-selector"
+import { RoleSelector } from "@/components/role-selector"
+import { FileUpload } from "@/components/file-upload"
+// import { RentYardLogo } from "@/components/rentyard-logo"
+import { Building, Home, Building2, Key, Users, Briefcase } from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
+
+export type PropertyType = "single-house" | "apartments" | "condominiums"
+export type UserRole = "landlord" | "realtor" | "property-management"
+
+// Base schema for common fields
+const baseSchema = z.object({
+  propertyType: z.enum(["single-house", "apartments", "condominiums"]),
+  userRole: z.enum(["landlord", "realtor", "property-management"]),
+  acceptTerms: z.boolean().refine((val) => val === true, {
+    message: "You must accept the terms and conditions",
+  }),
+})
+
+// Landlord specific schema
+const landlordSchema = baseSchema.extend({
+  ownershipDoc: z.string().min(1, "Ownership document is required"),
+})
+
+// Realtor specific schema
+const realtorSchema = baseSchema.extend({
+  licenseNumber: z.string().min(1, "License number is required"),
+  additionalDocs: z.string().optional(),
+  landlordAgreement: z.string().min(1, "Agreement with landlord is required"),
+})
+
+// Property management company specific schema
+const propertyManagementSchema = baseSchema.extend({
+  companyName: z.string().min(1, "Company name is required"),
+  companyIdentifier: z.string().min(1, "Company identifier is required"),
+  jobTitle: z.string().min(1, "Job title is required"),
+  landlordAgreement: z.string().min(1, "Agreement with landlord/owner is required"),
+  country: z.string().min(1, "Country/Region is required"),
+  streetAddress: z.string().min(1, "Street address is required"),
+  aptSuite: z.string().optional(),
+  phoneCountry: z.string().min(1, "Phone country code is required"),
+  phoneNumber: z.string().min(1, "Phone number is required"),
+  contactEmail: z.string().email("Please enter a valid email address"),
+  city: z.string().min(1, "City/Town is required"),
+  state: z.string().min(1, "State/Territory is required"),
+  zipCode: z.string().min(1, "Zip code is required"),
+})
+
+// Union type for all possible form data
+type FormData =
+  | z.infer<typeof landlordSchema>
+  | z.infer<typeof realtorSchema>
+  | z.infer<typeof propertyManagementSchema>
+
+export function PropertyOnboardingForm() {
+  const [propertyType, setPropertyType] = useState<PropertyType>("condominiums")
+  const [userRole, setUserRole] = useState<UserRole>("property-management")
+
+  // Get the appropriate schema based on user role
+  const getSchema = () => {
+    switch (userRole) {
+      case "landlord":
+        return landlordSchema
+      case "realtor":
+        return realtorSchema
+      case "property-management":
+        return propertyManagementSchema
+      default:
+        return baseSchema
+    }
+  }
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(getSchema()) as any,
+    defaultValues: {
+      propertyType: "condominiums",
+      userRole: "property-management",
+      acceptTerms: false,
+    },
+  })
+
+  // Update form values when role changes
+  const handleRoleChange = (newRole: UserRole) => {
+    setUserRole(newRole)
+    form.setValue("userRole", newRole)
+    // Reset form validation when role changes
+    form.clearErrors()
+  }
+
+  const handlePropertyTypeChange = (newType: string) => {
+    setPropertyType(newType as PropertyType)
+    form.setValue("propertyType", newType as PropertyType)
+  }
+
+  const onSubmit = (data: FormData) => {
+    console.log(`Form data for ${userRole}:`, data)
+
+    // Log specific data based on role
+    switch (userRole) {
+      case "landlord":
+        console.log("Landlord form submitted:", {
+          propertyType: data.propertyType,
+          userRole: data.userRole,
+          ownershipDoc: (data as z.infer<typeof landlordSchema>).ownershipDoc,
+          acceptTerms: data.acceptTerms,
+        })
+        break
+      case "realtor":
+        const realtorData = data as z.infer<typeof realtorSchema>
+        console.log("Realtor form submitted:", {
+          propertyType: data.propertyType,
+          userRole: data.userRole,
+          licenseNumber: realtorData.licenseNumber,
+          additionalDocs: realtorData.additionalDocs,
+          landlordAgreement: realtorData.landlordAgreement,
+          acceptTerms: data.acceptTerms,
+        })
+        break
+      case "property-management":
+        const pmData = data as z.infer<typeof propertyManagementSchema>
+        console.log("Property Management form submitted:", {
+          propertyType: data.propertyType,
+          userRole: data.userRole,
+          companyInfo: {
+            companyName: pmData.companyName,
+            companyIdentifier: pmData.companyIdentifier,
+            jobTitle: pmData.jobTitle,
+            landlordAgreement: pmData.landlordAgreement,
+            country: pmData.country,
+            streetAddress: pmData.streetAddress,
+            aptSuite: pmData.aptSuite,
+            phoneCountry: pmData.phoneCountry,
+            phoneNumber: pmData.phoneNumber,
+            contactEmail: pmData.contactEmail,
+            city: pmData.city,
+            state: pmData.state,
+            zipCode: pmData.zipCode,
+          },
+          acceptTerms: data.acceptTerms,
+        })
+        break
+    }
+  }
+
+  const propertyTypes = [
+    {
+      id: "single-house" as PropertyType,
+      title: "Single House Property",
+      description: "Single unit house for single family",
+      icon: Home,
+    },
+    {
+      id: "apartments" as PropertyType,
+      title: "Apartments complex",
+      description: "Multiple unit house for families",
+      icon: Building,
+    },
+    {
+      id: "condominiums" as PropertyType,
+      title: "Condominiums",
+      description: "Multiple unit house for families",
+      icon: Building2,
+    },
+  ]
+
+  const userRoles = [
+    {
+      id: "landlord" as UserRole,
+      title: "Landlord",
+      description: "Owner of the property",
+      icon: Key,
+    },
+    {
+      id: "realtor" as UserRole,
+      title: "Realtor",
+      description: "Manage property on behalf on owner",
+      icon: Users,
+    },
+    {
+      id: "property-management" as UserRole,
+      title: "Property management company",
+      description: "For management company",
+      icon: Briefcase,
+    },
+  ]
+
+  return (
+    <div>
+      {/* ! Header Section */}
+      <div className='w-full border-b-[1px] border-[#E0E0E0] h-20 mb-10'>
+        <div className="container flex items-center justify-between px-20 py-6" >
+          <Link href="/" className="flex items-center space-x-2">
+            <Image src="/images/logo.png" alt="RentYard Logo" width={148} height={39} />
+          </Link>
+          <Button variant="outline" className="text-[#272B35] text-base">
+            Save & Exit
+          </Button>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-20 py-6">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit as SubmitHandler<any>)} className="space-y-8">
+            {/* Property Type Section */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Property type</h2>
+              <PropertyTypeSelector options={propertyTypes} value={propertyType} onChange={handlePropertyTypeChange} />
+            </div>
+
+            {/* Role Selection Section */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Select your role</h2>
+              <RoleSelector options={userRoles} value={userRole} onChange={(newRole: string) => handleRoleChange(newRole as UserRole)} />
+            </div>
+
+            {/* Conditional Content Based on Role */}
+            {userRole === "landlord" && (
+              <div className="mb-8">
+                <Card className="p-6 bg-gray-50 border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Proof of ownership</h3>
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="ownershipDoc"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700">Ownership doc*</FormLabel>
+                          <FormControl>
+                            <FileUpload
+                              id="ownership-doc"
+                              accept=".pdf"
+                              onFileSelect={(fileName: string) => field.onChange(fileName)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {userRole === "realtor" && (
+              <div className="mb-8">
+                <Card className="p-6 bg-gray-50 border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Realtor verification</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="licenseNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700">License number*</FormLabel>
+                          <FormControl>
+                            <Input placeholder="000000000000" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="additionalDocs"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700">
+                            Additional documents for realtor
+                          </FormLabel>
+                          <FormControl>
+                            <FileUpload
+                              id="additional-docs"
+                              accept=".pdf"
+                              onFileSelect={(fileName) => field.onChange(fileName)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="landlordAgreement"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700">Agreement with landlord*</FormLabel>
+                          <FormControl>
+                            <FileUpload
+                              id="landlord-agreement"
+                              accept=".pdf"
+                              onFileSelect={(fileName) => field.onChange(fileName)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {userRole === "property-management" && (
+              <div className="mb-8">
+                <Card className="p-6 bg-gray-50 border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Company & office info</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="companyName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700">Company name*</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Bunyan trade center" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="companyIdentifier"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700">
+                            Company identifier(EIN/TIN)*
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="Name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="jobTitle"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700">Your job title*</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Manager" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="landlordAgreement"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700">
+                            Agreement with landlord/owner*
+                          </FormLabel>
+                          <FormControl>
+                            <FileUpload
+                              id="agreement"
+                              accept=".pdf"
+                              onFileSelect={(fileName) => field.onChange(fileName)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700">Country/Region*</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choose country" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="us">United States</SelectItem>
+                              <SelectItem value="ca">Canada</SelectItem>
+                              <SelectItem value="uk">United Kingdom</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="streetAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700">Street address*</FormLabel>
+                          <FormControl>
+                            <Input placeholder="111 Austin Ave" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="aptSuite"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700">
+                            Apt, suit, unit (if applicable)
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="3050" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="phoneNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700">Phone number*</FormLabel>
+                          <div className="flex space-x-2">
+                            <FormField
+                              control={form.control}
+                              name="phoneCountry"
+                              render={({ field: countryField }) => (
+                                <Select onValueChange={countryField.onChange} defaultValue={countryField.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="w-20">
+                                      <SelectValue placeholder="🇺🇸" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="us">🇺🇸</SelectItem>
+                                    <SelectItem value="ca">🇨🇦</SelectItem>
+                                    <SelectItem value="uk">🇬🇧</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                            <FormControl>
+                              <Input placeholder="+880" className="flex-1" {...field} />
+                            </FormControl>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="contactEmail"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700">Contact email*</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="majarul0225@gmail.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700">City/Town*</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Dallas" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700">State/Territory*</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choose state" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="tx">Texas</SelectItem>
+                              <SelectItem value="ca">California</SelectItem>
+                              <SelectItem value="ny">New York</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="zipCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700">Zip code*</FormLabel>
+                          <FormControl>
+                            <Input placeholder="75061" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {/* Terms and Conditions */}
+            <FormField
+              control={form.control}
+              name="acceptTerms"
+              render={({ field }: any) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="text-sm text-gray-700">
+                      Accept RentYard property adding terms & condition
+                    </FormLabel>
+                    <FormMessage />
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-between">
+              <Button type="button" variant="ghost" className="text-gray-600">
+                Back
+              </Button>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6">
+                Get started
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </div>
+    </div>
+  )
+}
