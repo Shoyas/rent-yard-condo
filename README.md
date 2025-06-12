@@ -1,55 +1,32 @@
-# StarConnect
-
----
-
-> **"[TagLine]"**
-
-The **StarConnect Platform** is an innovative web-based solution that connects users with verified experts across diverse fields.  
-Whether it's text messaging, personalized video responses, interactive group calls, or special **Star Wishes**, StarConnect makes every interaction **seamless, meaningful, and engaging**.
-
----
-
-## Features
-
-- Direct Text Messaging with Experts
-- Personalized Video Responses
-- Interactive Group Call Sessions
-- **Star Wish** – Request customized videos for special occasions
-- Secure Payments & Earnings Management
-- Smart Scheduling System
-- Seamless Communication & Notifications
-
----
-
-## How to Run the Project
+# How to Run the Project
 
 Follow these simple steps to set up and run **StarConnect** locally:
 
-### 1. Clone the Repository
+## 1. Clone the Repository
 
 ```bash
 git clone "your-github-repository-link"
 ```
 
-### 2. Install Dependencies
+## 2. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Run for Development
+## 3. Run for Development
 
 ```bash
 npm run dev
 ```
 
-### 4. Build the Project (for Production)
+## 4. Build the Project (for Production)
 
 ```bash
 npm run build
 ```
 
-### 5. Start the Production Server
+## 5. Start the Production Server
 
 ```bash
 npm start
@@ -103,7 +80,3 @@ If everything is clean → commit will happen successfully.
 | **Format Code**                | `npm run format`                      | Format code using Prettier             |
 | **Git Commit Testing (Husky)** | `git add .`                           | Husky auto-fixes or blocks bad commits |
 | **"**                          | `git commit -m "Your commit message"` | For same like above                    |
-
-✅ Folder Structure
-
-# Here will be the folder structure
