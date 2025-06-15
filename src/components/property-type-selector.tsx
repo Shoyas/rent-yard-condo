@@ -2,13 +2,14 @@
 
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import type { LucideIcon } from "lucide-react"
+import React from "react"
+// import type { LucideIcon } from "lucide-react"
 
 interface PropertyTypeOption {
   id: string
   title: string
   description: string
-  icon: LucideIcon
+  icon: React.ReactNode
 }
 
 interface PropertyTypeSelectorProps {
@@ -26,18 +27,18 @@ export function PropertyTypeSelector({ options, value, onChange }: PropertyTypeS
           <Card
             key={option.id}
             className={cn(
-              "p-4 cursor-pointer transition-all hover:shadow-md border-2",
-              value === option.id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300",
+              "p-5 cursor-pointer transition-all border-[1px]",
+              value === option.id ? "border-card-border-blue bg-card-background" : "border-card-border-gray",
             )}
             onClick={() => onChange(option.id)}
           >
-            <div className="flex items-start space-x-3">
-              <div className={cn("p-2 rounded-lg", value === option.id ? "bg-blue-100" : "bg-gray-100")}>
-                <Icon className={cn("h-5 w-5", value === option.id ? "text-blue-600" : "text-gray-600")} />
+            <div className="flex items-start space-x-4">
+              <div>
+                {Icon}
               </div>
-              <div className="flex-1">
-                <h3 className="font-medium text-gray-900 text-sm">{option.title}</h3>
-                <p className="text-xs text-gray-500 mt-1">{option.description}</p>
+              <div className="flex-1 space-y-1.5">
+                <h3 className="font-semibold text-heading-black text-base">{option.title}</h3>
+                <p className="font-medium text-sm text-description-text-gray mt-1.5">{option.description}</p>
               </div>
             </div>
           </Card>
